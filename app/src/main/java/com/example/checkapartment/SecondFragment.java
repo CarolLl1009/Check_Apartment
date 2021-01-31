@@ -1,34 +1,119 @@
 package com.example.checkapartment;
 
+import android.content.Intent;
+import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.RadioGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
 
-public class SecondFragment extends Fragment {
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
+import com.example.checkapartment.databinding.FragmentSecondBinding;
+import com.example.checkapartment.presenter.IViewScore;
+import com.example.checkapartment.presenter.PresenterScore;
+
+
+
+public class SecondFragment extends Fragment implements IViewScore {
+
+
+    private FragmentSecondBinding mBinding;
+    private PresenterScore presenterScore;
+    private String imagen, nombre, torre, direccion, depto, totalSt ;
+
 
     @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null){
+            imagen = getArguments().getString("clave1");
+            nombre = getArguments().getString("clave2");
+            depto = getArguments().getString("clave5");
+        }
+
+        presenterScore = new PresenterScore( this);
+    }
+
+
     public View onCreateView(
             LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState
-    ) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_second, container, false);
+            Bundle savedInstanceState) {
+        mBinding = FragmentSecondBinding.inflate(inflater, container, false);
+        return mBinding.getRoot();
     }
 
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        view.findViewById(R.id.button_second).setOnClickListener(new View.OnClickListener() {
+        mBinding.tvNombre2.setText(nombre);
+        mBinding.tvDepto2.setText(depto);
+        Glide.with(view).load(imagen).apply(new RequestOptions().override(400,400))
+                .into(mBinding.ivDepto2);
+        mBinding.rgEstTern.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
-            public void onClick(View view) {
-                NavHostFragment.findNavController(SecondFragment.this)
-                        .navigate(R.id.action_SecondFragment_to_FirstFragment);
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                int estado =mBinding.rgEstTern.indexOfChild(mBinding.rgEstTern.findViewById(checkedId));
+                boolean eLuces = mBinding.cbLuces.isChecked();
+                boolean eBano = mBinding.cbBano.isChecked();
+                boolean eCocina = mBinding.cbCocina.isChecked();
+                boolean sDormitorio = mBinding.cbDormitorio.isChecked();
+                presenterScore.showScore(estado, eLuces, eBano, eCocina, sDormitorio);
+                presenterScore.activateButton(estado, eLuces, eBano, eCocina, sDormitorio);
+            }
+
+        });
+
+        mBinding.btAlert.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                String[] emails = {"carol.llanca@gmail.com"};
+                Intent mIntent = new Intent(Intent.ACTION_SENDTO);
+                mIntent.setData(Uri.parse("mailto:"));
+                mIntent.putExtra(Intent.EXTRA_EMAIL, emails);
+                mIntent.putExtra(Intent.EXTRA_SUBJECT, "ALERTA!!: INSPECCIÓN DE DEPTO");
+                mIntent.putExtra(Intent.EXTRA_TEXT, "Revisión de departamento " + nombre + " " + depto);
+                if (mIntent.resolveActivity(getActivity().getPackageManager()) !=null) {
+                    startActivity(mIntent);
+                } else {
+                    Toast.makeText(getContext(), "Debes instalar una app de correo",
+                            Toast.LENGTH_SHORT).show();
+                }
+
+            }
+
+        });
+        mBinding.btSave.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getContext(), "Puntaje obtenido " + totalSt, Toast.LENGTH_SHORT).show();
             }
         });
+
+
+    }
+
+    @Override
+    public void showScore(int total) {
+        totalSt = total + "";
+        String puntaje = getString(R.string.score, totalSt);
+        mBinding.tvResult.setTextColor(Color.parseColor("#000000"));
+        mBinding.tvResult.setText(puntaje);
+
+
+    }
+
+    @Override
+    public void activateButton(boolean check) {
+        mBinding.btAlert.setEnabled(check);
+
     }
 }
